@@ -3,20 +3,18 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.model.Notification;
+import fr.polytech.model.NotificationDTO;
 import fr.polytech.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.Flow;
 
 @Service
 public class NotificationService {
@@ -36,27 +34,26 @@ public class NotificationService {
     }
 
     /**
-     * Send the notifications to the concerned user.
+     * Save and send the notifications to the concerned user.
      *
-     * @param notificationList The notifications to send.
+     * @param notification The notification to send.
      */
-    public void createNotifications(List<Notification> notificationList) {
-        notificationList.forEach(notification -> {
-            Notification createdNotification = saveNotification(notification);
-            sseService.sendNotificationToOneUser(notification.getReceiverId(), createdNotification);
-        });
-    }
-
-    /**
-     * Save the notification in the database.
-     *
-     * @param notification The notification to save.
-     * @return The notification saved.
-     */
-    private Notification saveNotification(Notification notification) {
+    public void createNotification(NotificationDTO notification) {
         logger.info("Creating notification");
-        Mono<Notification> notificationMono = notificationRepository.save(notification);
-        return notificationMono.block();
+
+        Notification notificationToSave = new Notification();
+        notificationToSave.setId(UUID.randomUUID().toString());
+        notificationToSave.setReceiverId(notification.getReceiverId().toString());
+        notificationToSave.setObjectId(notification.getObjectId().toString());
+        notificationToSave.setDate(notification.getDate());
+        notificationToSave.setMessage(notification.getMessage());
+        notificationToSave.setCategory(notification.getCategory());
+
+        Mono<Notification> notificationMono = notificationRepository.save(notificationToSave);
+        notificationMono.subscribe(notificationToSend -> {
+            logger.info("Notification created");
+            sseService.sendNotificationToOneUser(notificationToSend);
+        }, throwable -> logger.error("Error while creating notification", throwable));
     }
 
     /**
@@ -74,24 +71,15 @@ public class NotificationService {
      *
      * @param id Notification id.
      * @return Notification with the specified id.
-     * @throws HttpClientErrorException If notification is not found.
+     * @throws WebClientResponseException If notification is not found or unauthorized access.
      */
-    public Mono<Notification> getNotificationById(String id, String token) throws HttpClientErrorException {
+    public Mono<Notification> getNotificationById(String id) {
         logger.info("Getting notification by id: " + id);
-
-        String pureToken = token.split(" ")[1];
-        if (pureToken == null) {
-            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
-        }
-
-        DecodedJWT decodedJWT = JWT.decode(pureToken);
-        if (!decodedJWT.getSubject().equals(id)) {
-            throw new HttpClientErrorException(HttpStatus.FORBIDDEN);
-        }
-
-        return notificationRepository.findById(UUID.fromString(id))
-                .switchIfEmpty(Mono.error(new HttpClientErrorException(HttpStatus.NOT_FOUND)));
+        return notificationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new WebClientResponseException(HttpStatus.NOT_FOUND.value(),
+                        HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, null)));
     }
+
 
     /**
      * Get all notifications by receiver id
@@ -103,30 +91,36 @@ public class NotificationService {
         logger.info("Getting all notifications by receiver id");
         return notificationRepository
                 .findAll()
-                .filter(notification -> notification.getReceiverId().equals(UUID.fromString(userId)));
+                .filter(notification -> notification.getReceiverId().equals(userId));
     }
 
+    /**
+     * Delete notification by id
+     *
+     * @param id    Notification id
+     * @param token Token
+     * @return Void
+     */
     public Mono<Void> deleteNotification(String id, String token) {
         logger.info("Removing notification with id {}", id);
 
+        if (token == null || !token.contains(" ")) {
+            return Mono.error(new WebClientResponseException(HttpStatus.UNAUTHORIZED.value(),
+                    HttpStatus.UNAUTHORIZED.getReasonPhrase(), null, null, null));
+        }
+
         String pureToken = token.split(" ")[1];
-        if (pureToken == null) {
-            return Mono.error(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
-        }
-
         DecodedJWT decodedJWT = JWT.decode(pureToken);
-        if (!decodedJWT.getSubject().equals(id)) {
-            return Mono.error(new HttpClientErrorException(HttpStatus.FORBIDDEN));
-        }
 
-        return getNotificationById(id, token)
+        return getNotificationById(id)
                 .flatMap(notification -> {
-                    if (!notification.getReceiverId().equals(UUID.fromString(decodedJWT.getSubject()))) {
-                        return Mono.error(new HttpClientErrorException(HttpStatus.FORBIDDEN));
+                    if (!notification.getReceiverId().equals(decodedJWT.getSubject())) {
+                        return Mono.error(new WebClientResponseException(HttpStatus.FORBIDDEN.value(),
+                                HttpStatus.FORBIDDEN.getReasonPhrase(), null, null, null));
                     }
-                    return notificationRepository.deleteById(UUID.fromString(id));
-                })
-                .switchIfEmpty(Mono.error(new HttpClientErrorException(HttpStatus.NOT_FOUND)));
+                    return notificationRepository.deleteById(id);
+                });
     }
+
 
 }

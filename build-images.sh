@@ -6,14 +6,6 @@ cd api-image
 
 docker build -t notification-api .
 
-cd ../postgres-image
+cd ../mongo-image
 
 docker build -t notification-db .
-
-cd ../kafka-image
-
-docker build -t kafka-server .
-
-cd ../zookeeper-image
-
-docker build -t zookeeper-server .

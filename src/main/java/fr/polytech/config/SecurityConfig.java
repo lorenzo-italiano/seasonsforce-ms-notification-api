@@ -22,6 +22,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((auth) -> auth
+                        .requestMatchers("/api/v1/notification/sse/subscribe/**").permitAll()
                         .anyRequest().authenticated());
 
         http

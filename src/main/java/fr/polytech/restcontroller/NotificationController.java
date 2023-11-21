@@ -8,8 +8,10 @@ import jakarta.ws.rs.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -41,10 +43,12 @@ public class NotificationController {
     @GetMapping("/{id}")
     @IsAdmin
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public Mono<Notification> getNotificationById(@PathVariable String id, @RequestHeader("Authorization") String token) {
-        return notificationService.getNotificationById(id, token)
+    public Mono<Notification> getNotificationById(@PathVariable String id) {
+        return notificationService.getNotificationById(id)
                 .doOnSuccess(notification -> logger.info("Got notification with id: {}", id))
-                .doOnError(e -> logger.error("Error while getting the notification with id: {}", id, e));
+                .doOnError(e -> logger.error("Error while getting the notification with id: {}", id, e))
+                .switchIfEmpty(Mono.error(new WebClientResponseException(HttpStatus.NOT_FOUND.value(),
+                        HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, null)));
     }
 
     @GetMapping("/user/{userId}")
@@ -60,15 +64,11 @@ public class NotificationController {
     @Produces(MediaType.TEXT_PLAIN_VALUE)
     public Mono<Boolean> removeNotification(@PathVariable String id, @RequestHeader("Authorization") String token) {
         return notificationService.deleteNotification(id, token)
-                .doOnSuccess(aVoid -> logger.info("Notification removed successfully"))
                 .thenReturn(true)
-                .onErrorResume(e -> {
-                    logger.error("Error while removing the notification", e);
-                    if (e instanceof Error) {
-                        return Mono.error(e);
-                    }
-                    return Mono.just(false);
-                });
+                .doOnSuccess(aVoid -> logger.info("Notification removed successfully"))
+                .doOnError(e -> logger.error("Error while removing notification", e))
+                .switchIfEmpty(Mono.error(new WebClientResponseException(HttpStatus.NOT_FOUND.value(),
+                        HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, null)));
     }
 
 }

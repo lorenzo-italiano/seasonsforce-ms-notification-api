@@ -1,37 +1,35 @@
 package fr.polytech.model;
 
-import jakarta.persistence.*;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-import java.util.List;
-import java.util.UUID;
 
-@Entity
-@Table(name = "notification", schema = "public")
+@Document(collection = "notification")
 public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
     private Date date;
 
-    @Enumerated(EnumType.STRING)
     private Category category;
 
     private String message;
 
-    private UUID objectId;
+    private String objectId;
 
-    private UUID receiverId;
+    private String receiverId;
 
-    public Notification() {}
+    public Notification() {
+    }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -59,19 +57,19 @@ public class Notification {
         this.message = message;
     }
 
-    public UUID getObjectId() {
+    public String getObjectId() {
         return objectId;
     }
 
-    public void setObjectId(UUID objectId) {
+    public void setObjectId(String objectId) {
         this.objectId = objectId;
     }
 
-    public UUID getReceiverId() {
+    public String getReceiverId() {
         return receiverId;
     }
 
-    public void setReceiverId(UUID receiverId) {
+    public void setReceiverId(String receiverId) {
         this.receiverId = receiverId;
     }
 }
