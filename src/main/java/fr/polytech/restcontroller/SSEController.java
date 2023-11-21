@@ -30,6 +30,10 @@ public class SSEController {
      * Initialize logger
      */
     private static final Logger logger = LoggerFactory.getLogger(SSEController.class);
+
+    /**
+     * Map a unique token to a user id.
+     */
     private final Map<String, UUID> uniqueUrlToUserIdMap = new ConcurrentHashMap<>();
 
     private final SSEService sseService;
@@ -39,6 +43,13 @@ public class SSEController {
         this.sseService = sseService;
     }
 
+    /**
+     * Create a unique token for the user and return it.
+     *
+     * @param userId The user id.
+     * @param token  The JWT token.
+     * @return The unique token.
+     */
     @PostMapping("/proxy/{userId}")
     @Produces(MediaType.TEXT_PLAIN_VALUE)
     @IsSender
@@ -73,6 +84,12 @@ public class SSEController {
         }
     }
 
+    /**
+     * Stream events to the user.
+     *
+     * @param uniqueToken The unique token of the user.
+     * @return A flux of server sent events.
+     */
     @GetMapping("/subscribe/{uniqueToken}")
     @Produces(MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<NotificationDTO>> streamEvents(@PathVariable String uniqueToken) {
@@ -86,6 +103,14 @@ public class SSEController {
         return createSseFlux(sink, userId, uniqueToken);
     }
 
+    /**
+     * Create a flux of server sent events from a sink.
+     *
+     * @param sink        The sink.
+     * @param userId      The user id.
+     * @param uniqueToken The unique token.
+     * @return A flux of server sent events.
+     */
     private Flux<ServerSentEvent<NotificationDTO>> createSseFlux(Sinks.Many<NotificationDTO> sink, UUID userId, String uniqueToken) {
         return sink.asFlux()
                 .map(notification -> ServerSentEvent.builder(notification).build())

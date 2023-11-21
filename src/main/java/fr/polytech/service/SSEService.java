@@ -21,16 +21,32 @@ public class SSEService {
     private static final Logger logger = LoggerFactory.getLogger(SSEService.class);
     private final Map<UUID, Sinks.Many<NotificationDTO>> userSinks = new ConcurrentHashMap<>();
 
+    /**
+     * Register a user to the SSE service.
+     *
+     * @param userId The user id.
+     * @return The sink to send notifications to the user.
+     */
     public Sinks.Many<NotificationDTO> registerUser(UUID userId) {
         logger.info("Registering user {}", userId);
         return userSinks.computeIfAbsent(userId, id -> Sinks.many().multicast().onBackpressureBuffer());
     }
 
+    /**
+     * Unregister a user from the SSE service.
+     *
+     * @param userId The user id.
+     */
     public void unregisterUser(UUID userId) {
         Optional.ofNullable(userSinks.remove(userId))
                 .ifPresent(Sinks.Many::tryEmitComplete);
     }
 
+    /**
+     * Send a notification to the concerned user.
+     *
+     * @param notification The notification to send.
+     */
     public void sendNotificationToOneUser(Notification notification) {
         UUID receiverId = UUID.fromString(notification.getReceiverId());
         Optional.ofNullable(userSinks.get(receiverId)).ifPresent(sink -> {

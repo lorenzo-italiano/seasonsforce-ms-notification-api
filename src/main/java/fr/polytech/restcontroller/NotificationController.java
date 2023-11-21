@@ -31,6 +31,11 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Get all notifications.
+     *
+     * @return A flux of notifications.
+     */
     @GetMapping("/")
     @IsAdmin
     @Produces(MediaType.APPLICATION_JSON_VALUE)
@@ -40,6 +45,12 @@ public class NotificationController {
                 .doOnError(e -> logger.error("Error while getting all notifications", e));
     }
 
+    /**
+     * Get a notification by its id.
+     *
+     * @param id The id of the notification.
+     * @return The notification.
+     */
     @GetMapping("/{id}")
     @IsAdmin
     @Produces(MediaType.APPLICATION_JSON_VALUE)
@@ -51,6 +62,13 @@ public class NotificationController {
                         HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, null)));
     }
 
+    /**
+     * Get all notifications by receiver id.
+     *
+     * @param userId The id of the receiver.
+     * @param token  The token of the sender.
+     * @return A flux of notifications.
+     */
     @GetMapping("/user/{userId}")
     @IsSender
     @Produces(MediaType.APPLICATION_JSON_VALUE)
@@ -60,6 +78,13 @@ public class NotificationController {
                 .doOnError(e -> logger.error("Error while getting all notifications by receiver id", e));
     }
 
+    /**
+     * Delete a notification by its id.
+     *
+     * @param id    The id of the notification.
+     * @param token The token of the sender.
+     * @return A boolean indicating if the notification has been deleted.
+     */
     @DeleteMapping("/{id}")
     @Produces(MediaType.TEXT_PLAIN_VALUE)
     public Mono<Boolean> removeNotification(@PathVariable String id, @RequestHeader("Authorization") String token) {

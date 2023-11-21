@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaService {
 
+    /**
+     * Initialize logger
+     */
     private static final Logger logger = LoggerFactory.getLogger(KafkaService.class);
 
     private final NotificationService notificationService;
