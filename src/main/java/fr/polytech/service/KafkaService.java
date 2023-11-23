@@ -3,12 +3,16 @@ package fr.polytech.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.polytech.model.Category;
+import fr.polytech.model.ExperienceDTOWithUserId;
 import fr.polytech.model.NotificationDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
 
 
 @Service
@@ -43,6 +47,24 @@ public class KafkaService {
         }
     }
 
+    @KafkaListener(topics = "experience-creation-topic", groupId = "notification")
+    public void listenExperience(String message) {
+        logger.info("listenExperience: message = " + message);
+        try {
+            ExperienceDTOWithUserId experienceDTOWithUserId = messageToExperience(message);
+            logger.info("listenExperience: experienceDTOWithUserId = " + experienceDTOWithUserId);
+            NotificationDTO notification = new NotificationDTO();
+            notification.setCategory(Category.EXPERIENCE);
+            notification.setDate(new Date());
+            notification.setReceiverId(experienceDTOWithUserId.getUserId());
+            notification.setMessage("You have a new experience");
+            notification.setObjectId(experienceDTOWithUserId.getId());
+            notificationService.createNotification(notification);
+        } catch (JsonProcessingException e) {
+            logger.error("Error while parsing message", e);
+        }
+    }
+
     /**
      * Parse the message received from the topic.
      *
@@ -55,5 +77,12 @@ public class KafkaService {
         });
         logger.info("Notification received: {}", notification);
         return notification;
+    }
+
+    private ExperienceDTOWithUserId messageToExperience(String message) throws JsonProcessingException {
+        ExperienceDTOWithUserId experienceDTOWithUserId = objectMapper.readValue(message, new TypeReference<ExperienceDTOWithUserId>() {
+        });
+        logger.info("experienceDTOWithUserId received: {}", experienceDTOWithUserId);
+        return experienceDTOWithUserId;
     }
 }
