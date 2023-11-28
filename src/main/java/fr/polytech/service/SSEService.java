@@ -28,8 +28,13 @@ public class SSEService {
      * @return The sink to send notifications to the user.
      */
     public Sinks.Many<NotificationDTO> registerUser(UUID userId) {
-        logger.info("Registering user {}", userId);
-        return userSinks.computeIfAbsent(userId, id -> Sinks.many().multicast().onBackpressureBuffer());
+        if (!userSinks.containsKey(userId)) {
+            logger.info("Registering user {}", userId);
+            return userSinks.computeIfAbsent(userId, id -> Sinks.many().multicast().onBackpressureBuffer());
+        } else {
+            logger.info("User {} is already registered, returning existing sink", userId);
+            return userSinks.get(userId);
+        }
     }
 
     /**

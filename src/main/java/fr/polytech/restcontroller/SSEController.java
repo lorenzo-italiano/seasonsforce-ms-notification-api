@@ -100,7 +100,15 @@ public class SSEController {
         }
 
         Sinks.Many<NotificationDTO> sink = sseService.registerUser(userId);
-        return createSseFlux(sink, userId, uniqueToken);
+
+        Flux<ServerSentEvent<NotificationDTO>> initialEvent = Flux.just(
+                ServerSentEvent.<NotificationDTO>builder()
+                        .event("connected")
+                        .data(null)
+                        .build()
+        );
+
+        return initialEvent.concatWith(createSseFlux(sink, userId, uniqueToken));
     }
 
     /**
@@ -116,10 +124,6 @@ public class SSEController {
                 .map(notification -> ServerSentEvent.builder(notification).build())
                 .doOnCancel(() -> {
                     sseService.unregisterUser(userId);
-                    uniqueUrlToUserIdMap.remove(uniqueToken);
-                })
-                .doOnTerminate(() -> {
-                    logger.info("SSE stream terminated for user {}", userId);
                     uniqueUrlToUserIdMap.remove(uniqueToken);
                 });
     }
