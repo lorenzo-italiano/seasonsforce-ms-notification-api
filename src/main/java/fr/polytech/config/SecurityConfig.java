@@ -17,11 +17,19 @@ public class SecurityConfig {
 
     private final JwtAuthConverter jwtAuthConverter = new JwtAuthConverter();
 
+    /**
+     * Configure the security filter chain.
+     *
+     * @param http the http security builder
+     * @return the security filter chain
+     * @throws Exception if an error occurs
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((auth) -> auth
+                        .requestMatchers("/api/v1/notification/sse/subscribe/**").permitAll()
                         .anyRequest().authenticated());
 
         http

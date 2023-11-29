@@ -1,13 +1,10 @@
 package fr.polytech.model;
 
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-
 import java.util.Date;
 import java.util.UUID;
 
 public class NotificationDTO {
-    private UUID id;
+    private String id;
 
     private Date date;
 
@@ -16,15 +13,25 @@ public class NotificationDTO {
     private String message;
 
     private UUID objectId;
+    private UUID receiverId;
 
     public NotificationDTO() {
     }
 
-    public UUID getId() {
+    public NotificationDTO(Notification notification) {
+        this.id = notification.getId();
+        this.date = notification.getDate();
+        this.category = notification.getCategory();
+        this.message = notification.getMessage();
+        this.objectId = UUID.fromString(notification.getObjectId());
+        this.receiverId = UUID.fromString(notification.getReceiverId());
+    }
+
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -58,5 +65,18 @@ public class NotificationDTO {
 
     public void setObjectId(UUID objectId) {
         this.objectId = objectId;
+    }
+
+    public UUID getReceiverId() {
+        return receiverId;
+    }
+
+    public void setReceiverId(UUID receiverId) {
+        this.receiverId = receiverId;
+    }
+
+    @Override
+    public String toString() {
+        return "NotificationDTO{" + "id=" + id + ", date=" + date + ", category=" + category + ", message='" + message + '\'' + ", objectId=" + objectId + ", receiverId=" + receiverId + '}';
     }
 }

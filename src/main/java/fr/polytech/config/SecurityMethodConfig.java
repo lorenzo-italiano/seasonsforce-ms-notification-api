@@ -14,6 +14,13 @@ public class SecurityMethodConfig {
     }
 
     public static class SecurityMethods {
+        /**
+         * Check if the user is the sender of the notification.
+         *
+         * @param userId The user id.
+         * @param token  The JWT token.
+         * @return True if the user is the sender, false otherwise.
+         */
         public boolean isSender(String userId, String token) {
             String pureToken = token.replace("Bearer ", "");
             DecodedJWT decodedToken = JWT.decode(pureToken);
