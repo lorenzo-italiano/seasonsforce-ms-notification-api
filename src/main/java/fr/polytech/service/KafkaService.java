@@ -47,6 +47,11 @@ public class KafkaService {
         }
     }
 
+    /**
+     * Listen to the topic "experience-creation-topic" and send the notification to the concerned user.
+     *
+     * @param message The message received from the topic.
+     */
     @KafkaListener(topics = "experience-creation-topic", groupId = "notification")
     public void listenExperience(String message) {
         logger.info("listenExperience: message = " + message);
@@ -79,6 +84,13 @@ public class KafkaService {
         return notification;
     }
 
+    /**
+     * Parse the message received from the topic.
+     *
+     * @param message The message received from the topic.
+     * @return The experience to send to the concerned user.
+     * @throws JsonProcessingException If the message cannot be parsed.
+     */
     private ExperienceDTOWithUserId messageToExperience(String message) throws JsonProcessingException {
         ExperienceDTOWithUserId experienceDTOWithUserId = objectMapper.readValue(message, new TypeReference<ExperienceDTOWithUserId>() {
         });
